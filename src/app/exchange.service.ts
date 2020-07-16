@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
-import {Observable, Subject} from "rxjs";
+import {Observable, Subject} from "rxjs/Rx";
 import {ApiService} from "./api.service";
-
-const exchangeURL = "wss://ws-sandbox.coinapi.io/v1/";
+import {environment} from '../environments/environment'
 
 export interface Message {
-  author: string;
-  message: string;
+  type: string;
+  apikey: string;
+  subscribe_data_type: string[];
 }
 
 @Injectable({
@@ -16,12 +16,12 @@ export class ExchangeService {
 
   public messages: Subject<Message>
   constructor(wsService: ApiService) {
-    this.messages = <Subject<Message>>wsService.connect(exchangeURL).map(
-      (response: MessageEvent): Message => {
+    this.messages = <Subject<Message>>wsService.connect(environment.exchangeURL).map((response: MessageEvent): Message => {
         let data = JSON.parse(response.data);
         return {
-          author: data.author,
-          message: data.message
+          type: data.type,
+          apikey: data.apikey,
+          subscribe_data_type: data.subscribe_data_type
         };
       }
     );

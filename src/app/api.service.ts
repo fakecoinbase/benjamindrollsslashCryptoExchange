@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import * as Rx from "rxjs";
+import * as Rx from "rxjs/Rx";
 
 @Injectable({
   providedIn: 'root'
@@ -7,11 +7,12 @@ import * as Rx from "rxjs";
 export class ApiService {
 
   // socket = new WebSocket("wss://ws-sandbox.coinapi.io/v1/")
-  constructor() { }
+  constructor() {}
 
-  private subject: Rx.Subject<MessageEvent>;
+  private subject: Rx.Subject<any>;
+  public ws: any;
 
-  public connect(url): Rx.Subject<MessageEvent> {
+  public connect(url: string): Rx.Subject<any> {
     if (!this.subject) {
       this.subject = this.create(url);
       console.log("Successfully connected:" + url);
@@ -19,20 +20,20 @@ export class ApiService {
     return this.subject;
   }
 
-  private create(url): Rx.Subject<MessageEvent> {
-    let ws = new WebSocket(url);
+  private create(url: string): Rx.Subject<any> {
+     this.ws = new WebSocket(url);
 
-    let observable = Rx.Observable.create((obs: Rx.Observer<MessageEvent>) => {
-      ws.onmessage = obs.next.bind(obs);
-      ws.onerror = obs.error.bind(obs);
-      ws.onclose = obs.complete.bind(obs);
-      return ws.close.bind(ws);
-    });
+    const observable = Rx.Observable.create((obs: Rx.Observer<any>) => {
+      this.ws.onmessage = obs.next.bind(obs);
+      this.ws.onerror = obs.error.bind(obs);
+      this.ws.onclose = obs.complete.bind(obs);
+      return this.ws.close.bind(this.ws);
+    }).share();
 
-    let observer = {
+    const observer = {
       next: (data: Object) => {
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(data));
+        if (this.ws.readyState === WebSocket.OPEN) {
+          this.ws.send(JSON.stringify(data));
         }
       }
     }
@@ -40,6 +41,12 @@ export class ApiService {
     return Rx.Subject.create(observer, observable);
   }
 
+  public close() {
+    if (this.ws) {
+      this.ws.close();
+      this.subject = null;
+    }
+  }
 
 
 }
